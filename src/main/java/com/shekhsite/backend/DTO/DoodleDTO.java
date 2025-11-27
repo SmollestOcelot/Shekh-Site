@@ -1,14 +1,26 @@
 package com.shekhsite.backend.DTO;
 
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.time.Instant;
 
 public class DoodleDTO {
+
     private Long id;
+
+    @NotBlank(message = "Title is required")
+    @Size(max = 200, message = "Title must be at most 200 characters")
     private String title;
+
+    @Size(max = 300, message = "Description must be at most 300 characters")
     private String description;
+
     private String imageUrl;
+
     private Instant createdAt;
+
     private Instant updatedAt;
 
     public DoodleDTO() {

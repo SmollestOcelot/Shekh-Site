@@ -2,55 +2,53 @@ package com.shekhsite.backend.service.impl;
 
 
 import com.shekhsite.backend.DTO.StoryDTO;
+import com.shekhsite.backend.common.exception.NotFoundException;
+import com.shekhsite.backend.common.exception.ResourceNotFoundException;
 import com.shekhsite.backend.service.IStoryService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class StoryServiceImpl implements IStoryService {
 
-    private final Map<Long, StoryDTO> stories = new HashMap<>();
-    private final AtomicLong idSequence = new AtomicLong(1);
+    private final Map<Long, StoryDTO> stories = new ConcurrentHashMap<>();
+    private final AtomicLong idGenerator = new AtomicLong(1);
 
     @Override
     public List<StoryDTO> getAllStories() {
         return new ArrayList<>(stories.values());
     }
 
-    @Override
-    public StoryDTO getStoryById(Long id) {
-        return stories.get(id);
+    private StoryDTO requireStory(Long id) {
+        return Optional.ofNullable(stories.get(id))
+                .orElseThrow(() -> new NotFoundException("Story with id " + id + " not found"));
     }
 
     @Override
+    public StoryDTO getStoryById(Long id) {
+        return requireStory(id);
+    }
+
+
+    @Override
     public StoryDTO createStory(StoryDTO storyDTO) {
-        long id = idSequence.getAndIncrement();
+        long id = idGenerator.getAndIncrement();
         storyDTO.setId(id);
-
-        if (storyDTO.getCreatedAt() == null) {
-            storyDTO.setCreatedAt(Instant.from(LocalDateTime.now()));
-        }
-
         stories.put(id, storyDTO);
         return storyDTO;
     }
 
     @Override
     public StoryDTO updateStory(Long id, StoryDTO storyDTO) {
-        StoryDTO existing = stories.get(id);
-        if (existing == null) {
-            return null;
+        if (!stories.containsKey(id)) {
+            throw new NoSuchElementException("Story not found with id " + id);
         }
-
         storyDTO.setId(id);
-        if (storyDTO.getCreatedAt() == null) {
-            storyDTO.setCreatedAt(existing.getCreatedAt());
-        }
-
         stories.put(id, storyDTO);
         return storyDTO;
     }
