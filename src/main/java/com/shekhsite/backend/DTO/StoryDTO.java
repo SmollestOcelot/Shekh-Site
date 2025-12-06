@@ -15,6 +15,9 @@ public class StoryDTO {
     @NotBlank(message = "Content is required")
     private String body;
 
+    @Size(max = 200)
+    private String tags;
+
     @Size(max = 100, message = "Category must be at most 100 characters")
     private String category;
 
@@ -28,12 +31,14 @@ public class StoryDTO {
     public StoryDTO(Long id,
                     String title,
                     String body,
+                    String tags,
                     String category,
                     Instant createdAt,
                     Instant updatedAt) {
         this.id = id;
         this.title = title;
         this.body = body;
+        this.tags = tags;
         this.category = category;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -64,6 +69,10 @@ public class StoryDTO {
     public void setBody(String body) {
         this.body = body;
     }
+
+    public String getTags() { return tags; }
+
+    public void setTags(String tags) { this.tags = tags;}
 
     public String getCategory() { return category; }
 

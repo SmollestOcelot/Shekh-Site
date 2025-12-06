@@ -17,6 +17,9 @@ public class DoodleDTO {
     @Size(max = 300, message = "Description must be at most 300 characters")
     private String description;
 
+    @Size(max = 200)
+    private String tags;
+
     private String imageUrl;
 
     private Instant createdAt;
@@ -29,12 +32,14 @@ public class DoodleDTO {
     public DoodleDTO(Long id,
                      String title,
                      String description,
+                     String tags,
                      String imageUrl,
                      Instant createdAt,
                      Instant updatedAt) {
         this.id = id;
         this.title = title;
         this.description = description;
+        this.tags = tags;
         this.imageUrl = imageUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -65,6 +70,10 @@ public class DoodleDTO {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public String getTags() { return tags; }
+
+    public void setTags(String tags) { this.tags = tags;}
 
     public String getImageUrl() {
         return imageUrl;

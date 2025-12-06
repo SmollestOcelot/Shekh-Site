@@ -1,17 +1,18 @@
 package com.shekhsite.backend.controller;
 
 import com.shekhsite.backend.DTO.DoodleDTO;
-import com.shekhsite.backend.model.Doodle;
 import com.shekhsite.backend.service.IDoodleService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/doodles")
+@Validated
 public class DoodleController {
 
     private final IDoodleService doodleService;
@@ -21,33 +22,27 @@ public class DoodleController {
     }
 
     @GetMapping
-    public List<DoodleDTO> getAllDoodles() {
-        return doodleService.getAllDoodles();
+    public ResponseEntity<List<DoodleDTO>> getAllDoodles() {
+        return ResponseEntity.ok(doodleService.getAllDoodles());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DoodleDTO> getDoodleById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(doodleService.getDoodleById(id));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(doodleService.getDoodleById(id));
     }
 
     @PostMapping
     public ResponseEntity<DoodleDTO> createDoodle(@Valid @RequestBody DoodleDTO doodleDTO) {
         DoodleDTO created = doodleService.createDoodle(doodleDTO);
-        return ResponseEntity.ok(created);
+        URI location = URI.create("/api/doodles/" + created.getId());
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<DoodleDTO> updateDoodle(@PathVariable Long id,
-                                                  @RequestBody DoodleDTO doodleDTO) {
-        try {
-            return ResponseEntity.ok(doodleService.updateDoodle(id, doodleDTO));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+                                                  @Valid @RequestBody DoodleDTO doodleDTO) {
+        DoodleDTO updated = doodleService.updateDoodle(id, doodleDTO);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
