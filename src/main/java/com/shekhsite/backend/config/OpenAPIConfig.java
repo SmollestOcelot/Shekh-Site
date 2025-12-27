@@ -23,9 +23,9 @@ public class OpenAPIConfig {
                                 "This API provides full CRUD operations, search, filtering, " +
                                 "pagination, and sorting capabilities.")
                         .contact(new Contact()
-                                .name("Shekh")
-                                .email("your.email@example.com")
-                                .url("https://github.com/yourusername"))
+                                .name("Kekipi")
+                                .email("smolocelot@icloud.com")
+                                .url("https://github.com/smollestocelot"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
