@@ -10,11 +10,11 @@ export class DoodleService {
 
   constructor(private http: HttpClient) {}
 
-  getDoodle(): Observable<DoodleDTO[]> {
+  getAllDoodles(): Observable<DoodleDTO[]> {
     return this.http.get<DoodleDTO[]>(this.baseUrl);
   }
 
-  getDoodle(id: number): Observable<DoodleDTO> {
+  getDoodleById(id: number): Observable<DoodleDTO> {
     return this.http.get<DoodleDTO>(`${this.baseUrl}/${id}`);
   }
 

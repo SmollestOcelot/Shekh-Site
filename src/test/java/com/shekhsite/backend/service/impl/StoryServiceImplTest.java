@@ -1,130 +1,162 @@
 package com.shekhsite.backend.service.impl;
 
 import com.shekhsite.backend.DTO.StoryDTO;
-import com.shekhsite.backend.common.exception.NotFoundException;
+import com.shekhsite.backend.common.exception.ResourceNotFoundException;
+import com.shekhsite.backend.model.Story;
+import com.shekhsite.backend.repository.StoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class StoryServiceImplTest {
 
+    @Mock
+    private StoryRepository storyRepository;
+
+    @InjectMocks
     private StoryServiceImpl storyService;
+
+    private Story story;
+    private StoryDTO storyDTO;
 
     @BeforeEach
     void setUp() {
-        storyService = new StoryServiceImpl();
+        story = new Story();
+        story.setTitle("Test Story");
+        story.setBody("This is a test story");
+        story.setTags("tag1,tag2");
+        story.setCategory("fiction");
+        story.setAuthor("Shekh");
+
+        storyDTO = new StoryDTO();
+        storyDTO.setTitle("Test Story");
+        storyDTO.setBody("This is a test story");
+        storyDTO.setTags("tag1,tag2");
+        storyDTO.setCategory("fiction");
     }
 
     @Test
-    void createStory_assignsIdAndStores() {
-        StoryDTO dto = new StoryDTO(
-                null,
-                "Test Title",
-                "Body text",
-                "tag1,tag2",
-                "Story",
-                Instant.now(),
-                Instant.now()
-        );
+    void getAllStories_returnsAllStories() {
+        // Given
+        when(storyRepository.findAll()).thenReturn(List.of(story));
 
-        StoryDTO created = storyService.createStory(dto);
+        // When
+        List<StoryDTO> result = storyService.getAllStories();
 
-        assertNotNull(created.getId());
-        List<StoryDTO> all = storyService.getAllStories();
-        assertEquals(1, all.size());
-        assertEquals("Test Title", all.get(0).getTitle());
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Test Story", result.get(0).getTitle());
+        verify(storyRepository).findAll();
     }
 
     @Test
-    void getStoryById_returnsExisting() {
-        StoryDTO dto = new StoryDTO(
-                null,
-                "Another",
-                "Body",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()
-        );
-        StoryDTO created = storyService.createStory(dto);
+    void getStoryById_existingId_returnsStory() {
+        // Given
+        when(storyRepository.findById(1L)).thenReturn(Optional.of(story));
 
-        StoryDTO found = storyService.getStoryById(created.getId());
+        // When
+        StoryDTO result = storyService.getStoryById(1L);
 
-        assertEquals(created.getId(), found.getId());
-        assertEquals("Another", found.getTitle());
+        // Then
+        assertNotNull(result);
+        assertEquals("Test Story", result.getTitle());
+        assertEquals("This is a test story", result.getBody());
+        verify(storyRepository).findById(1L);
     }
 
     @Test
-    void getStoryById_throwsNotFoundForMissing() {
-        assertThrows(NotFoundException.class, () -> storyService.getStoryById(999L));
+    void getStoryById_nonExistingId_throwsException() {
+        // Given
+        when(storyRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> storyService.getStoryById(999L));
+        verify(storyRepository).findById(999L);
     }
 
     @Test
-    void updateStory_updatesExisting() {
-        StoryDTO dto = new StoryDTO(
-                null,
-                "Original",
-                "Body",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()
-        );
-        StoryDTO created = storyService.createStory(dto);
+    void createStory_savesStory() {
+        // Given
+        when(storyRepository.save(any(Story.class))).thenReturn(story);
 
-        StoryDTO update = new StoryDTO(
-                null,
-                "Updated",
-                "New Body",
-                "tag",
-                "Story",
-                created.getCreatedAt(),
-                Instant.now()
-        );
+        // When
+        StoryDTO result = storyService.createStory(storyDTO);
 
-        StoryDTO updated = storyService.updateStory(created.getId(), update);
-
-        assertEquals("Updated", updated.getTitle());
-        assertEquals("New Body", updated.getBody());
+        // Then
+        assertNotNull(result);
+        assertEquals("Test Story", result.getTitle());
+        verify(storyRepository).save(any(Story.class));
     }
 
     @Test
-    void updateStory_nonExisting_throwsNotFound() {
-        StoryDTO update = new StoryDTO(
-                null,
-                "Updated",
-                "Body",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()
-        );
+    void updateStory_existingId_updatesStory() {
+        // Given
+        when(storyRepository.findById(1L)).thenReturn(Optional.of(story));
+        when(storyRepository.save(any(Story.class))).thenReturn(story);
 
-        assertThrows(NotFoundException.class,
-                () -> storyService.updateStory(123L, update));
+        StoryDTO updateDTO = new StoryDTO();
+        updateDTO.setTitle("Updated Story");
+        updateDTO.setBody("Updated body content");
+        updateDTO.setTags("new,tags");
+        updateDTO.setCategory("non-fiction");
+
+        // When
+        StoryDTO result = storyService.updateStory(1L, updateDTO);
+
+        // Then
+        assertNotNull(result);
+        verify(storyRepository).findById(1L);
+        verify(storyRepository).save(any(Story.class));
     }
 
     @Test
-    void deleteStory_removesIt() {
-        StoryDTO dto = new StoryDTO(
-                null,
-                "To Delete",
-                "Body",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()
-        );
-        StoryDTO created = storyService.createStory(dto);
+    void updateStory_nonExistingId_throwsException() {
+        // Given
+        when(storyRepository.findById(999L)).thenReturn(Optional.empty());
 
-        storyService.deleteStory(created.getId());
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> storyService.updateStory(999L, storyDTO));
+        verify(storyRepository).findById(999L);
+        verify(storyRepository, never()).save(any());
+    }
 
-        assertThrows(NotFoundException.class,
-                () -> storyService.getStoryById(created.getId()));
+    @Test
+    void deleteStory_existingId_deletesSuccessfully() {
+        // Given
+        when(storyRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(storyRepository).deleteById(1L);
+
+        // When
+        storyService.deleteStory(1L);
+
+        // Then
+        verify(storyRepository).existsById(1L);
+        verify(storyRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteStory_nonExistingId_throwsException() {
+        // Given
+        when(storyRepository.existsById(999L)).thenReturn(false);
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> storyService.deleteStory(999L));
+        verify(storyRepository).existsById(999L);
+        verify(storyRepository, never()).deleteById(any());
     }
 }
-

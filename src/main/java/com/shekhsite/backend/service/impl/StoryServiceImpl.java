@@ -1,92 +1,89 @@
 package com.shekhsite.backend.service.impl;
 
 import com.shekhsite.backend.DTO.StoryDTO;
-import com.shekhsite.backend.common.exception.NotFoundException;
+import com.shekhsite.backend.common.exception.ResourceNotFoundException;
+import com.shekhsite.backend.model.Story;
+import com.shekhsite.backend.repository.StoryRepository;
 import com.shekhsite.backend.service.IStoryService;
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class StoryServiceImpl implements IStoryService {
 
-    private final Map<Long, StoryDTO> stories = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final StoryRepository storyRepository;
+
+    public StoryServiceImpl(StoryRepository storyRepository) {
+        this.storyRepository = storyRepository;
+    }
 
     @Override
+    @Transactional(readOnly = true)
     public List<StoryDTO> getAllStories() {
-        return new ArrayList<>(stories.values());
-    }
-
-    private StoryDTO requireStory(Long id) {
-        return Optional.ofNullable(stories.get(id))
-                .orElseThrow(() -> new NotFoundException("Story with id " + id + " not found"));
+        return storyRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public StoryDTO getStoryById(Long id) {
-        return requireStory(id);
+        Story story = storyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Story", id));
+        return toDTO(story);
     }
 
     @Override
     public StoryDTO createStory(StoryDTO storyDTO) {
-        long id = idGenerator.getAndIncrement();
-        storyDTO.setId(id);
+        Story story = new Story();
+        story.setTitle(storyDTO.getTitle());
+        story.setBody(storyDTO.getBody());
+        story.setTags(storyDTO.getTags());
+        story.setCategory(storyDTO.getCategory());
+        story.setAuthor("Shekh"); // Default author
 
-        Instant now = Instant.now();
-        if (storyDTO.getCreatedAt() == null) {
-            storyDTO.setCreatedAt(now);
-        }
-        storyDTO.setUpdatedAt(now);
-
-        stories.put(id, storyDTO);
-        return storyDTO;
+        Story saved = storyRepository.save(story);
+        return toDTO(saved);
     }
 
     @Override
     public StoryDTO updateStory(Long id, StoryDTO storyDTO) {
-        StoryDTO existing = requireStory(id); // throws NotFoundException if missing
+        Story existing = storyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Story", id));
 
         existing.setTitle(storyDTO.getTitle());
         existing.setBody(storyDTO.getBody());
+        existing.setTags(storyDTO.getTags());
         existing.setCategory(storyDTO.getCategory());
-        existing.setUpdatedAt(Instant.now());
 
-        stories.put(id, existing);
-        return existing;
+        Story updated = storyRepository.save(existing);
+        return toDTO(updated);
     }
 
     @Override
     public void deleteStory(Long id) {
-        // will throw if it doesn't exist
-        requireStory(id);
-        stories.remove(id);
+        if (!storyRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Story", id);
+        }
+        storyRepository.deleteById(id);
     }
 
-    @PostConstruct
-    public void initSampleStories() {
-        createStory(new StoryDTO(
-                null,
-                "The Cat That Drew the Moon",
-                "A short story about an artist cat who draws constellations for their friends.",
-                "fantasy, cats",
-                "fiction",
-                null,
-                null
-        ));
-
-        createStory(new StoryDTO(
-                null,
-                "Rainy Day Notebook",
-                "Slice-of-life notes from a cozy afternoon sketching and writing.",
-                "slice_of_life",
-                "fiction",
-                null,
-                null
-        ));
+    // Helper method to convert Entity to DTO
+    private StoryDTO toDTO(Story story) {
+        return new StoryDTO(
+                story.getId(),
+                story.getTitle(),
+                story.getBody(),
+                story.getTags(),
+                story.getCategory(),
+                story.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant(),
+                story.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant()
+        );
     }
 }
