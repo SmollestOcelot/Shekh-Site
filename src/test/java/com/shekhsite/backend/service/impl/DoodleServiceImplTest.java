@@ -33,12 +33,26 @@ class DoodleServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        LocalDateTime now = LocalDateTime.now();
+
         doodle = new Doodle();
         doodle.setTitle("Test Doodle");
         doodle.setDescription("A test doodle");
         doodle.setImageUrl("https://example.com/image.png");
         doodle.setTags("tag1,tag2");
         doodle.setAuthor("Shekh");
+        // Use reflection to set the timestamps since @PrePersist won't run in unit tests
+        try {
+            var createdAtField = Doodle.class.getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(doodle, now);
+
+            var updatedAtField = Doodle.class.getDeclaredField("updatedAt");
+            updatedAtField.setAccessible(true);
+            updatedAtField.set(doodle, now);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         doodleDTO = new DoodleDTO();
         doodleDTO.setTitle("Test Doodle");

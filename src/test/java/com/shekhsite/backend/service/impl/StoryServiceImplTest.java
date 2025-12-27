@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,12 +33,26 @@ class StoryServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        LocalDateTime now = LocalDateTime.now();
+
         story = new Story();
         story.setTitle("Test Story");
         story.setBody("This is a test story");
         story.setTags("tag1,tag2");
         story.setCategory("fiction");
         story.setAuthor("Shekh");
+        // Use reflection to set the timestamps since @PrePersist won't run in unit tests
+        try {
+            var createdAtField = Story.class.getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(story, now);
+
+            var updatedAtField = Story.class.getDeclaredField("updatedAt");
+            updatedAtField.setAccessible(true);
+            updatedAtField.set(story, now);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         storyDTO = new StoryDTO();
         storyDTO.setTitle("Test Story");

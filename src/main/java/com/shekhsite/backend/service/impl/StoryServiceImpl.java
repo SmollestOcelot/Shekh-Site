@@ -5,6 +5,8 @@ import com.shekhsite.backend.common.exception.ResourceNotFoundException;
 import com.shekhsite.backend.model.Story;
 import com.shekhsite.backend.repository.StoryRepository;
 import com.shekhsite.backend.service.IStoryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +74,67 @@ public class StoryServiceImpl implements IStoryService {
             throw new ResourceNotFoundException("Story", id);
         }
         storyRepository.deleteById(id);
+    }
+
+    // Enhanced search and filter operations
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoryDTO> searchByTitle(String title) {
+        return storyRepository.findByTitleContainingIgnoreCase(title)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoryDTO> searchByKeyword(String keyword) {
+        return storyRepository.searchByKeyword(keyword)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoryDTO> filterByCategory(String category) {
+        return storyRepository.findByCategory(category)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoryDTO> filterByTag(String tag) {
+        return storyRepository.findByTagsContaining(tag)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StoryDTO> getRecentStories() {
+        return storyRepository.findTop5ByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Pagination support
+    @Override
+    @Transactional(readOnly = true)
+    public Page<StoryDTO> getAllStories(Pageable pageable) {
+        return storyRepository.findAll(pageable)
+                .map(this::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<StoryDTO> getStoriesByCategory(String category, Pageable pageable) {
+        return storyRepository.findByCategory(category, pageable)
+                .map(this::toDTO);
     }
 
     // Helper method to convert Entity to DTO

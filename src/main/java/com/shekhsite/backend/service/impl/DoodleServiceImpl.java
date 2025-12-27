@@ -5,6 +5,8 @@ import com.shekhsite.backend.common.exception.ResourceNotFoundException;
 import com.shekhsite.backend.model.Doodle;
 import com.shekhsite.backend.repository.DoodleRepository;
 import com.shekhsite.backend.service.IDoodleService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +74,51 @@ public class DoodleServiceImpl implements IDoodleService {
             throw new ResourceNotFoundException("Doodle", id);
         }
         doodleRepository.deleteById(id);
+    }
+
+    // Enhanced search and filter operations
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoodleDTO> searchByTitle(String title) {
+        return doodleRepository.findByTitleContainingIgnoreCase(title)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoodleDTO> searchByKeyword(String keyword) {
+        return doodleRepository.searchByKeyword(keyword)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoodleDTO> filterByTag(String tag) {
+        return doodleRepository.findByTagsContaining(tag)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoodleDTO> getRecentDoodles() {
+        return doodleRepository.findTop6ByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Pagination support
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DoodleDTO> getAllDoodles(Pageable pageable) {
+        return doodleRepository.findAll(pageable)
+                .map(this::toDTO);
     }
 
     // Helper method to convert Entity to DTO
